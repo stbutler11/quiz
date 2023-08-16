@@ -1,0 +1,188 @@
+<head>
+
+    <style>
+        #app {
+            background-color: black;
+            height: 100%;
+            width: 100%;
+        }
+
+        #header {
+            height: 20%;
+            background-color: darkblue;
+            font-size: 6vw;
+            color: white;
+        }
+
+        #letter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            grid-auto-rows: 1fr;
+            width: 100%;
+            height: 80%;
+            background-color: red;
+        }
+
+        #image-container {
+            display: none;
+            background-color: white;
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        #image-container img {
+            width: 100%;
+            height: 100%;
+        }
+
+        .showing-image #image-container {
+            display: block;
+        }
+
+        .letter {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: green;
+            font-size: 10vw;
+            border: solid;
+        }
+
+        @media (orientation: landscape) {
+            .letter {
+                background-color: yellow;
+                font-size: 10vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app" class="showing-image">
+        <div id="header">
+
+        </div>
+        <div id="letter-grid">
+          <button class="letter">A</button>
+          <button class="letter">B</button>
+          <button class="letter">C</button>
+          <button class="letter">D</button>
+      
+          <button class="letter">E</button>
+          <button class="letter">F</button>
+          <button class="letter">G</button>
+          <button class="letter">H</button>
+      
+          <button class="letter">I</button>
+          <button class="letter">J</button>
+          <button class="letter">K</button>
+          <button class="letter">L</button>
+       
+          <button class="letter">M</button>
+          <button class="letter">N</button>
+          <button class="letter">O</button>
+          <button class="letter">P</button>
+       
+          <button class="letter">R</button>
+          <button class="letter">S</button>
+          <button class="letter">T</button>
+          <button class="letter">U</button>
+      
+          <button class="letter">Q/V</button>
+          <button class="letter">W</button>
+          <button class="letter">Y</button>
+          <button class="letter">X/Z</button>
+        </div>
+        <div id="image-container">
+            <img id="image" src="">
+        </div>
+    </div>
+
+    <script>
+        let questions;
+        let currentIndex = -1;
+        let score = 0;
+
+        const letters = [...document.getElementsByClassName("letter")];
+        letters.forEach(l => {
+            l.onclick = () => {
+                const letter = l.getInnerHTML();
+                const answer = currentQuestion().correct_answer;
+                if (letter.split("/").find(l => answer.startsWith(l))) {
+                    score++;
+                    console.log(score);
+                } else {
+                    console.error("miss");
+                }
+                alert(`${letter}: ${answer}`);
+                nextQuestion();
+            }
+        });
+
+        const imageContainer = document.getElementById("image-container");
+        imageContainer.onclick = hideImage;
+
+        async function fetchQuestions() {
+            const questionsResponse = await fetch("https://opentdb.com/api.php?amount=10&difficulty=easy&type=multiple");
+            const json = await questionsResponse.json();
+            return json.results;
+        }
+
+        // async function nextQuestion() {
+        //     currentIndex++;
+        //     if (!currentQuestion()) {
+        //         questions = await fetchQuestions();
+        //         currentIndex = 0;
+        //     }
+        //     const header = document.getElementById("header");
+        //     header.replaceChildren(decodeHtml(currentQuestion().question));
+        //     showImage();
+        // }
+
+        function currentQuestion() {
+            return questions && questions[currentIndex];
+        }
+
+        async function nextQuestion() {
+            questions ??= [];
+            currentIndex = 0;
+            const { name, src } = await nextPokemon();
+            document.getElementById("image").src = src;
+            questions[0] = {
+                correct_answer: name
+            }
+            showImage();
+        }
+
+        function decodeHtml(html) {
+            var txt = document.createElement("textarea");
+            txt.innerHTML = html;
+            return txt.value;
+        }
+
+        async function nextPokemon() {
+            const id = Math.floor(Math.random() * 500);
+            const pokemonResponse = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
+            const json = await pokemonResponse.json();
+            return {
+                name: json.name,
+                src: json.sprites.other.dream_world.front_default
+            }
+        }
+
+        function showImage() {
+            document.getElementById("app").setAttribute("class", "showing-image");
+        }
+
+        function hideImage() {
+            document.getElementById("app").setAttribute("class", "");
+        }
+
+        nextQuestion();
+    </script>
+    
+</body>
