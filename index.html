@@ -15,13 +15,17 @@
         }
 
         #letter-grid {
-            display: grid;
+            display: none;
             grid-template-columns: repeat(4, 1fr);
             grid-template-rows: repeat(4, 1fr);
             grid-auto-rows: 1fr;
             width: 100%;
             height: 80%;
             background-color: red;
+        }
+
+        .show-letters #letter-grid {
+            display: grid;
         }
 
         .letter {
@@ -38,6 +42,59 @@
                 background-color: yellow;
                 font-size: 10vh;
             }
+        }
+
+        #calc {
+            display: none;
+            width: 100%;
+            height: 80%;
+            background-color: yellowgreen;
+        }
+
+        .show-calc #calc {
+            display: block;
+        }
+
+        .calc-display {
+            font-size: 8vw;
+            float:right;
+        }
+
+        .calc-input {
+            display: grid;
+            width: 100%;
+            height: 90%;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            grid-auto-rows: 1fr;
+            background-color: red;
+        }
+
+        .number {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: green;
+            font-size: 10vw;
+            border: solid;
+        }
+
+        .calc-cancel {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: red;
+            font-size: 10vw;
+            border: solid;
+        }
+
+        .calc-enter {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: darkgray;
+            font-size: 10vw;
+            border: solid;
         }
     </style>
 </head>
@@ -78,6 +135,27 @@
           <button class="letter">Y</button>
           <button class="letter">X/Z</button>
         </div>
+
+        <div id="calc">
+            <span class="calc-display">&nbsp;</span>
+            <div class="calc-input">    
+              <button class="number">1</button>
+              <button class="number">2</button>
+              <button class="number">3</button>
+  
+              <button class="number">4</button>
+              <button class="number">5</button>
+              <button class="number">6</button>
+  
+              <button class="number">7</button>
+              <button class="number">8</button>
+              <button class="number">9</button>
+  
+              <button class="calc-cancel">C</button>
+              <button class="number">0</button>
+              <button class="calc-enter">E</button>
+            </div>
+          </div>
     </div>
 
     <script>
@@ -113,8 +191,15 @@
                 questions = await fetchQuestions();
                 currentIndex = 0;
             }
+            const { question, correct_answer } = currentQuestion();
             const header = document.getElementById("header");
-            header.replaceChildren(decodeHtml(currentQuestion().question));
+            header.replaceChildren(decodeHtml(question));
+            if (parseInt(correct_answer, 10) >= 0 ) {
+                calculator.reset();
+                showCalc();
+            } else {
+                showLetters();
+            }
 
         }
 
@@ -127,6 +212,55 @@
             txt.innerHTML = html;
             return txt.value;
         }
+
+        function showCalc() {
+            document.getElementById("app").setAttribute("class", "show-calc");
+        }
+
+        function showLetters() {
+            document.getElementById("app").setAttribute("class", "show-letters");
+        }
+
+        class Calculator {
+
+            constructor(id, onenter){
+                this.currentNumber = -1;
+                const calcDom = document.getElementById(id);
+                this.calcDisplay = calcDom.querySelector('.calc-display');
+                const numbers = [...calcDom.querySelectorAll('.number')];
+                numbers.forEach(n => {
+                    n.onclick = () => {
+                        const number = parseInt(n.getInnerHTML(), 10);
+                        if (this.currentNumber < 0) {
+                            this.currentNumber = number;
+                        } else {
+                            this.currentNumber = (this.currentNumber * 10) + number;
+                        }
+                        this.calcDisplay.replaceChildren(`${this.currentNumber}`);
+                    }
+                });
+                const calcCancel = calcDom.querySelector('.calc-cancel');
+                calcCancel.onclick = () => this.reset();
+                const calcEnter = calcDom.querySelector('.calc-enter');
+                calcEnter.onclick = () => onenter(this.currentNumber);
+                this.onenter = onenter;
+            }
+
+            reset() {
+                this.currentNumber = -1;
+                this.calcDisplay.replaceChildren("-");
+            }
+        }
+            
+        const calculator = new Calculator("calc", (input) => {
+            const answer = currentQuestion().correct_answer;
+            // TODO Add in the score
+            alert(`
+                You guessed: ${input} 
+                The correct answer is: ${answer}
+            `);
+            nextQuestion();
+        });
 
         nextQuestion();
     </script>
