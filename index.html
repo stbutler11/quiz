@@ -192,15 +192,18 @@
         letters.forEach(l => {
             l.ontouchstart = () => {
                 const letter = l.getInnerHTML();
-                const answer = currentQuestion().correct_answer;
-                if (letter.split("/").find(l => answer.startsWith(l))) {
+                const rootAnswer = currentQuestion().correct_answer;
+                // Remove "The" from the answer
+                const answerWithoutThe = rootAnswer.replace(/\s*[T|t]he\s+(.*)/, "$1");
+                if (letter.split("/").find(l => answerWithoutThe.startsWith(l))) {
                     incrementCorrect();
                     console.log(score);
                 } else {
                     increamentIncorrect();
                     console.error("miss");
                 }
-                alert(`${letter}: ${answer}`);
+                const answerWithTheInBrackets = rootAnswer.replace(/\s*([T|t]he)(\s+)(.*)/, "($1)$2$3")
+                alert(`${letter}: ${answerWithTheInBrackets}`);
                 nextQuestion();
             }
         });
