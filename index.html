@@ -8,10 +8,26 @@
         }
 
         #header {
+            display: flex;
+            text-align: center;
             height: 20%;
             background-color: darkblue;
             font-size: 6vw;
             color: white;
+        }
+
+        #score {
+            text-align: end;
+        }
+
+        #correct:before {
+            content: "✔";
+            color: green;
+        }
+
+        #incorrect:before {
+            content: "❌";
+            color: red;
         }
 
         #letter-grid {
@@ -104,7 +120,11 @@
 
     <div id="app">
         <div id="header">
-
+            <div id="question"></div>
+            <div id="score">
+                <span id="correct">0</span>
+                <span id="incorrect">0</span>
+            </div>
         </div>
         <div id="letter-grid">
           <button class="letter">A</button>
@@ -163,7 +183,8 @@
     <script>
         let questions;
         let currentIndex = -1;
-        let score = 0;
+        let numCorrect = 0;
+        let numIncorrect = 0;
 
         const letters = [...document.getElementsByClassName("letter")];
         letters.forEach(l => {
@@ -171,9 +192,10 @@
                 const letter = l.getInnerHTML();
                 const answer = currentQuestion().correct_answer;
                 if (letter.split("/").find(l => answer.startsWith(l))) {
-                    score++;
+                    incrementCorrect();
                     console.log(score);
                 } else {
+                    increamentIncorrect();
                     console.error("miss");
                 }
                 alert(`${letter}: ${answer}`);
@@ -194,8 +216,8 @@
                 currentIndex = 0;
             }
             const { question, correct_answer } = currentQuestion();
-            const header = document.getElementById("header");
-            header.replaceChildren(decodeHtml(question));
+            const questionDiv = document.getElementById("question");
+            questionDiv.replaceChildren(decodeHtml(question));
             if (parseInt(correct_answer, 10) >= 0 ) {
                 calculator.reset();
                 showCalc();
@@ -221,6 +243,16 @@
 
         function showLetters() {
             document.getElementById("app").setAttribute("class", "show-letters");
+        }
+
+        function incrementCorrect() {
+            numCorrect++;
+            document.getElementById("correct").replaceChildren(`${numCorrect}`);
+        }
+
+        function increamentIncorrect() {
+            numIncorrect++;
+            document.getElementById("incorrect").replaceChildren(`${numIncorrect}`);
         }
 
         class Calculator {
@@ -256,7 +288,11 @@
             
         const calculator = new Calculator("calc", (input) => {
             const answer = currentQuestion().correct_answer;
-            // TODO Add in the score
+            if (parseInt(input, 10) === parseInt(answer, 10)) {
+                incrementCorrect();
+            } else {
+                increamentIncorrect();
+            }
             alert(`
                 You guessed: ${input} 
                 The correct answer is: ${answer}
