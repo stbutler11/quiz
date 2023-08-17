@@ -118,6 +118,22 @@
             font-size: 10vw;
             border: solid;
         }
+
+        #multiple-choice {
+            display: none;
+            grid-template-rows: repeat(4, 1fr);
+            grid-auto-rows: 1fr;
+            width: 100%;
+            height: 80%;
+        }
+
+        .show-multiple #multiple-choice {
+            display: grid;
+        }
+
+        .choice {
+            font-size: 5vh;
+        }
     </style>
 </head>
 <body>
@@ -181,7 +197,16 @@
               <button class="number">0</button>
               <button class="calc-enter">E</button>
             </div>
-          </div>
+        </div>
+
+        <div id="multiple-choice">
+            <button class="choice">One flew over the cuckoos nest</button>
+            <button class="choice">Armageddon</button>
+            <button class="choice">Twister</button>
+            <button class="choice">The sound of music</button>
+            <button class="choice">E</button>
+            <button class="choice">F</button>
+        </div>
     </div>
 
     <script>
@@ -194,7 +219,7 @@
         letters.forEach(l => {
             l.ontouchstart = () => {
                 const letter = l.getInnerHTML();
-                const rootAnswer = currentQuestion().correct_answer;
+                const rootAnswer = currentQuestion().answer;
                 // Remove "The" from the answer
                 const answerWithoutThe = rootAnswer.replace(/\s*[T|t]he\s+(.*)/, "$1");
                 if (letter.split("/").find(l => answerWithoutThe.startsWith(l))) {
@@ -210,6 +235,8 @@
             }
         });
 
+
+
         async function fetchQuestions() {
             const questionsResponse = await fetch("https://opentdb.com/api.php?amount=10&difficulty=easy&type=multiple");
             const json = await questionsResponse.json();
@@ -222,20 +249,55 @@
                 questions = await fetchQuestions();
                 currentIndex = 0;
             }
-            const { question, correct_answer } = currentQuestion();
+            const { question, type, answer, incorrectAnswers } = currentQuestion();
             const questionDiv = document.getElementById("question");
             questionDiv.replaceChildren(decodeHtml(question));
-            if (parseInt(correct_answer, 10) >= 0 ) {
-                calculator.reset();
+
+            if (type === "calc") {
                 showCalc();
+            } else if (type === "multiple") {
+                const choices = [answer, ...incorrectAnswers];
+                shuffleArray(choices);
+                showMultiple(choices, (selectedAnswer) => {
+                    const answer = currentQuestion().answer;
+                    if (selectedAnswer === answer) {
+                        incrementCorrect();
+                    } else {
+                        increamentIncorrect();
+                    }
+                    alert(`
+                        You guessed: ${selectedAnswer} 
+                        The correct answer is: ${answer}
+                    `);
+                    nextQuestion();
+                });
             } else {
                 showLetters();
             }
-
         }
 
         function currentQuestion() {
-            return questions && questions[currentIndex];
+            if (!questions || !questions[currentIndex]) {
+                return;
+            }
+            const questionDetails = questions[currentIndex];
+            const question = questionDetails.question;
+            const answer = decodeHtml(questionDetails.correct_answer);
+            let type;
+            if (question.startsWith("Which ")) {
+                type = "multiple";
+            } else if (parseInt(answer, 10) >= 0 ) {
+                type = "calc";
+            } else {
+                type = "letters"
+            }
+
+            return {
+                question,
+                type,
+                answer,
+                incorrectAnswers: questionDetails.incorrect_answers.map(a => decodeHtml(a))
+            }
         }
 
         function decodeHtml(html) {
@@ -252,6 +314,16 @@
             document.getElementById("app").setAttribute("class", "show-letters");
         }
 
+        function showMultiple(choices, onselected) {
+            [...document.getElementsByClassName("choice")].forEach( (c,i) => {
+                c.replaceChildren(choices[i] || "");
+                c.ontouchstart = () => {
+                    onselected(c.getInnerHTML());
+                }
+            });
+            document.getElementById("app").setAttribute("class", "show-multiple");
+        }
+
         function incrementCorrect() {
             numCorrect++;
             document.getElementById("correct").replaceChildren(`${numCorrect}`);
@@ -260,6 +332,13 @@
         function increamentIncorrect() {
             numIncorrect++;
             document.getElementById("incorrect").replaceChildren(`${numIncorrect}`);
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
         }
 
         class Calculator {
@@ -294,7 +373,7 @@
         }
             
         const calculator = new Calculator("calc", (input) => {
-            const answer = currentQuestion().correct_answer;
+            const answer = currentQuestion().answer;
             if (parseInt(input, 10) === parseInt(answer, 10)) {
                 incrementCorrect();
             } else {
