@@ -1,43 +1,52 @@
+import "https://labeg.github.io/alertify.js/js/alertify.js";
+const { alertify } = alertifyjs;
+
 let numCorrect = 0;
 let numIncorrect = 0;
 let calculator;
 let nextQ;
 let currentQuestion;
 
+async function onCorrect() {
+    await alertify.alert(`Correct: ${currentQuestion.answer}`);
+    incrementCorrect();
+}
+
+async function onIncorrect(wrongAnswer) {
+    await alertify.alert(`
+        Selected answer: <strong>${wrongAnswer}</strong> </br>
+        Correct answer : <strong>${currentQuestion.answer}</strong>
+    `)
+}
+
+
 function initLetters() {
     const letters = [...document.getElementsByClassName("letter")];
     letters.forEach(l => {
-        l.ontouchstart = () => {
+        l.ontouchstart = async () => {
             const letter = l.getInnerHTML();
             const rootAnswer = currentQuestion.answer;
             // Remove "The" from the answer
             const answerWithoutThe = rootAnswer.replace(/\s*[T|t]he\s+(.*)/, "$1");
             if (letter.split("/").find(l => answerWithoutThe.startsWith(l))) {
-                incrementCorrect();
-                console.log(score);
+                await onCorrect();
             } else {
-                increamentIncorrect();
-                console.error("miss");
+                await onIncorrect(letter);
             }
-            const answerWithTheInBrackets = rootAnswer.replace(/\s*([T|t]he)(\s+)(.*)/, "($1)$2$3")
-            alert(`${letter}: ${answerWithTheInBrackets}`);
+            const answerWithTheInBrackets = rootAnswer.replace(/\s*([T|t]he)(\s+)(.*)/, "($1)$2$3");
             showNextQuestion();
         }
     });
 }
 
 function initCalcualtor() {
-    calculator = new Calculator("calc", (input) => {
-    const answer = currentQuestion.answer;
-    if (parseInt(input, 10) === parseInt(answer, 10)) {
-        incrementCorrect();
-    } else {
-        increamentIncorrect();
-    }
-    alert(`
-            You guessed: ${input} 
-            The correct answer is: ${answer}
-        `);
+    calculator = new Calculator("calc", async (input) => {
+        const answer = currentQuestion.answer;
+        if (parseInt(input, 10) === parseInt(answer, 10)) {
+            await onCorrect();
+        } else {
+            await onIncorrect(input);
+        }
         showNextQuestion();
     });
 }
@@ -53,17 +62,13 @@ async function showNextQuestion() {
     } else if (type === "multiple") {
         const choices = [answer, ...incorrectAnswers];
         shuffleArray(choices);
-        showMultiple(choices, (selectedAnswer) => {
+        showMultiple(choices, async (selectedAnswer) => {
             const answer = currentQuestion.answer;
             if (selectedAnswer === answer) {
-                incrementCorrect();
+                await onCorrect();
             } else {
-                increamentIncorrect();
+                await onIncorrect(selectedAnswer);
             }
-            alert(`
-                You guessed: ${selectedAnswer} 
-                The correct answer is: ${answer}
-            `);
             showNextQuestion();
         });
     } else {
