@@ -68,6 +68,7 @@ async function showNextQuestion() {
     questionDiv.replaceChildren(question);
     let appClass;
     if (type === "calc") {
+        calculator.reset();
         appClass = "show-calc";
     } else if (type === "multiple") {
         const choices = [answer, ...incorrectAnswers];
