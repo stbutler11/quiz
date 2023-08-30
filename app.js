@@ -20,7 +20,8 @@ async function onIncorrect(wrongAnswer) {
         <span style="color: red;">Incorrect</span> </br>
         Selected answer: <strong>${wrongAnswer}</strong> </br>
         Correct answer : <strong>${currentQuestion.answer}</strong>
-    `)
+    `);
+    incrementIncorrect();
 }
 
 
@@ -32,7 +33,7 @@ function initLetters() {
             const rootAnswer = currentQuestion.answer;
             // Remove "The" from the answer
             const answerWithoutThe = rootAnswer.replace(/\s*[T|t]he\s+(.*)/, "$1");
-            if (letter.split("/").find(l => answerWithoutThe.startsWith(l))) {
+            if (letter.split("/").find(l => answerWithoutThe.toUpperCase().startsWith(l))) {
                 await onCorrect();
             } else {
                 await onIncorrect(letter);
@@ -55,14 +56,19 @@ function initCalcualtor() {
     });
 }
 
+function initImage() {
+    const imageContainer = document.getElementById("image-container");
+    imageContainer.onclick = () => removeAppClass("show-image");
+}
+
 async function showNextQuestion() {
     currentQuestion = await nextQ();
-    const { question, type, answer, incorrectAnswers } = currentQuestion;
+    const { question, type, answer, incorrectAnswers, imageUrl } = currentQuestion;
     const questionDiv = document.getElementById("question");
     questionDiv.replaceChildren(question);
-
+    let appClass;
     if (type === "calc") {
-        showCalc();
+        appClass = "show-calc";
     } else if (type === "multiple") {
         const choices = [answer, ...incorrectAnswers];
         shuffleArray(choices);
@@ -75,18 +81,15 @@ async function showNextQuestion() {
             }
             showNextQuestion();
         });
+        appClass = "show-multiple";
     } else {
-        showLetters();
+       appClass = "show-letters";
     }
-}
-
-function showCalc() {
-    calculator.reset();
-    document.getElementById("app").setAttribute("class", "show-calc");
-}
-
-function showLetters() {
-    document.getElementById("app").setAttribute("class", "show-letters");
+    if (imageUrl) {
+        document.getElementById("image").src = imageUrl;
+        appClass = `${appClass} show-image`;
+    }
+    setAppClass(appClass);
 }
 
 function showMultiple(choices, onselected) {
@@ -96,7 +99,15 @@ function showMultiple(choices, onselected) {
             onselected(c.getInnerHTML());
         }
     });
-    document.getElementById("app").setAttribute("class", "show-multiple");
+}
+
+function setAppClass(c) {
+    document.getElementById("app").setAttribute("class", c);
+}
+
+function removeAppClass(c) {
+    const currentClass = document.getElementById("app").getAttribute("class");
+    document.getElementById("app").setAttribute("class", currentClass.replace(c, ""));
 }
 
 function incrementCorrect() {
@@ -104,7 +115,7 @@ function incrementCorrect() {
     document.getElementById("correct").replaceChildren(`${numCorrect}`);
 }
 
-function increamentIncorrect() {
+function incrementIncorrect() {
     numIncorrect++;
     document.getElementById("incorrect").replaceChildren(`${numIncorrect}`);
 }
@@ -165,6 +176,7 @@ export async function start(nextQuestionFn) {
     await loadParentPage();
     initLetters();
     initCalcualtor();
+    initImage();
     nextQ = nextQuestionFn;
     showNextQuestion();
 }

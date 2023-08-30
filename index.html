@@ -134,6 +134,25 @@
         .choice {
             font-size: 5vh;
         }
+
+        #image-container {
+            display: none;
+            background-color: white;
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        #image-container img {
+            width: 100%;
+            height: 100%;
+        }
+
+        .show-image #image-container {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -205,6 +224,10 @@
             <button class="choice">The sound of music</button>
             <button class="choice">E</button>
             <button class="choice">F</button>
+        </div>
+
+        <div id="image-container">
+            <img id="image" src="">
         </div>
     </div>
 
