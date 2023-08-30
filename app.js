@@ -8,12 +8,16 @@ let nextQ;
 let currentQuestion;
 
 async function onCorrect() {
-    await alertify.alert(`Correct: ${currentQuestion.answer}`);
+    await alertify.alert(`
+        <span style="color: green;">Correct</span> </br>
+        ${currentQuestion.answer}
+    `);
     incrementCorrect();
 }
 
 async function onIncorrect(wrongAnswer) {
     await alertify.alert(`
+        <span style="color: red;">Incorrect</span> </br>
         Selected answer: <strong>${wrongAnswer}</strong> </br>
         Correct answer : <strong>${currentQuestion.answer}</strong>
     `)
