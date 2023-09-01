@@ -2,6 +2,17 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
+
+        html {
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        body {
+            height: 100vh;
+            margin: 0;
+        }
+    
         #app {
             background-color: black;
             height: 100%;
@@ -138,6 +149,8 @@
 
         #image-container {
             display: none;
+            /* For some reasong without clip there are scrollbars */
+            overflow: clip; 
             background-color: white;
             position: absolute;
             top: 0;
