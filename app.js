@@ -144,9 +144,15 @@ class ElementWrapper {
      * @param {Function} handler 
      */
     addTouchHandler(handler) {
+        /**
+         * 
+         * @param {Event} e 
+         */
         const listener = e => {
             e.preventDefault();
+            e.stopPropagation();
             handler();
+            return false;
         }
         this.element.addEventListener("touchstart", listener);
         this.element.addEventListener("mousedown", listener);
