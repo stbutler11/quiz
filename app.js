@@ -27,20 +27,20 @@ async function onIncorrect(wrongAnswer) {
 
 function initLetters() {
     const letters = [...document.getElementsByClassName("letter")];
-    letters.forEach(l => {
-        l.ontouchstart = async () => {
+    letters.map(l => new ElementWrapper(l)).forEach(l => {
+        l.addTouchHandler(async () => {
             const letter = l.getInnerHTML();
             const rootAnswer = currentQuestion.answer;
             // Remove "The" from the answer
             const answerWithoutThe = rootAnswer.replace(/\s*[T|t]he\s+(.*)/, "$1");
             if (letter.split("/").find(l => answerWithoutThe.toUpperCase().startsWith(l))) {
+                // TODO const answerWithTheInBrackets = rootAnswer.replace(/\s*([T|t]he)(\s+)(.*)/, "($1)$2$3");
                 await onCorrect();
             } else {
                 await onIncorrect(letter);
             }
-            const answerWithTheInBrackets = rootAnswer.replace(/\s*([T|t]he)(\s+)(.*)/, "($1)$2$3");
             showNextQuestion();
-        }
+        });
     });
 }
 
@@ -57,14 +57,17 @@ function initCalcualtor() {
 }
 
 function initImage() {
-    const imageContainer = document.getElementById("image-container");
-    imageContainer.onclick = () => removeAppClass("show-image");
+    const imageContainer = new ElementWrapper(document.getElementById("image-container"));
+    imageContainer.addTouchHandler(() => {
+        removeAppClass("show-image");
+        document.getElementById("image").src = "";
+    });
 }
 
 async function showNextQuestion() {
     currentQuestion = await nextQ();
     const { question, type, answer, incorrectAnswers, imageUrl } = currentQuestion;
-    const questionDiv = document.getElementById("question");
+    const questionDiv = new ElementWrapper(document.getElementById("question"));
     questionDiv.replaceChildren(question);
     let appClass;
     if (type === "calc") {
@@ -94,11 +97,11 @@ async function showNextQuestion() {
 }
 
 function showMultiple(choices, onselected) {
-    [...document.getElementsByClassName("choice")].forEach( (c,i) => {
+    [...document.getElementsByClassName("choice")].map(elem => new ElementWrapper(elem)).forEach( (c,i) => {
         c.replaceChildren(choices[i] || "");
-        c.ontouchstart = () => {
+        c.addTouchHandler(() => {
             onselected(c.getInnerHTML());
-        }
+        });
     });
 }
 
@@ -128,15 +131,50 @@ function shuffleArray(array) {
     }
 }
 
+
+// Thin element wrapper for cross-browser stuff
+class ElementWrapper {
+
+    constructor(element) {
+        this.element = element;
+    }
+
+    /**
+     * Adds a touch handler to the wrapped element
+     * @param {Function} handler 
+     */
+    addTouchHandler(handler) {
+        const listener = e => {
+            e.preventDefault();
+            handler();
+        }
+        this.element.addEventListener("touchstart", listener);
+        this.element.addEventListener("mousedown", listener);
+    }
+
+    /**
+     * 
+     * @param {(string | Node)[]} children 
+     */
+    replaceChildren(children) {
+        this.element.replaceChildren(children);
+    }
+
+    getInnerHTML() {
+        return this.element.innerHTML || this.element.getInnerHTML()
+    }
+}
+
 class Calculator {
 
     constructor(id, onenter){
         this.currentNumber = -1;
         const calcDom = document.getElementById(id);
         this.calcDisplay = calcDom.querySelector('.calc-display');
-        const numbers = [...calcDom.querySelectorAll('.number')];
+        const numbers = [...calcDom.querySelectorAll('.number')]
+            .map(n => new ElementWrapper(n));
         numbers.forEach(n => {
-            n.ontouchstart = () => {
+            n.addTouchHandler(() => {
                 const number = parseInt(n.getInnerHTML(), 10);
                 if (this.currentNumber < 0) {
                     this.currentNumber = number;
@@ -144,12 +182,12 @@ class Calculator {
                     this.currentNumber = (this.currentNumber * 10) + number;
                 }
                 this.calcDisplay.replaceChildren(`${this.currentNumber}`);
-            }
+            });
         });
-        const calcCancel = calcDom.querySelector('.calc-cancel');
-        calcCancel.onclick = () => this.reset();
-        const calcEnter = calcDom.querySelector('.calc-enter');
-        calcEnter.onclick = () => onenter(this.currentNumber);
+        const calcCancel = new ElementWrapper(calcDom.querySelector('.calc-cancel'));
+        calcCancel.addTouchHandler(() => this.reset());
+        const calcEnter = new ElementWrapper(calcDom.querySelector('.calc-enter'));
+        calcEnter.addTouchHandler(() => onenter(this.currentNumber));
         this.onenter = onenter;
     }
 
