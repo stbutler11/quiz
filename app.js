@@ -28,7 +28,7 @@ async function onIncorrect(wrongAnswer) {
 function initLetters() {
     const letters = [...document.getElementsByClassName("letter")];
     letters.map(l => new ElementWrapper(l)).forEach(l => {
-        l.addTouchHandler(async () => {
+        l.setTouchHandler(async () => {
             const letter = l.getInnerHTML();
             const rootAnswer = currentQuestion.answer;
             // Remove "The" from the answer
@@ -58,7 +58,7 @@ function initCalcualtor() {
 
 function initImage() {
     const imageContainer = new ElementWrapper(document.getElementById("image-container"));
-    imageContainer.addTouchHandler(() => {
+    imageContainer.setTouchHandler(() => {
         removeAppClass("show-image");
         document.getElementById("image").src = "";
     });
@@ -99,7 +99,7 @@ async function showNextQuestion() {
 function showMultiple(choices, onselected) {
     [...document.getElementsByClassName("choice")].map(elem => new ElementWrapper(elem)).forEach( (c,i) => {
         c.replaceChildren(choices[i] || "");
-        c.addTouchHandler(() => {
+        c.setTouchHandler(() => {
             onselected(c.getInnerHTML());
         });
     });
@@ -135,6 +135,10 @@ function shuffleArray(array) {
 // Thin element wrapper for cross-browser stuff
 class ElementWrapper {
 
+    /**
+     * 
+     * @param {Element} element 
+     */
     constructor(element) {
         this.element = element;
     }
@@ -143,7 +147,7 @@ class ElementWrapper {
      * Adds a touch handler to the wrapped element
      * @param {Function} handler 
      */
-    addTouchHandler(handler) {
+    setTouchHandler(handler) {
         /**
          * 
          * @param {Event} e 
@@ -154,6 +158,11 @@ class ElementWrapper {
             handler();
             return false;
         }
+        if (this.element._listener) {
+            this.element.removeEventListener("touchstart", this.element._listener);
+            this.element.removeEventListener("mousedown", this.element._listener);
+        }
+        this.element._listener = listener;
         this.element.addEventListener("touchstart", listener);
         this.element.addEventListener("mousedown", listener);
     }
@@ -180,7 +189,7 @@ class Calculator {
         const numbers = [...calcDom.querySelectorAll('.number')]
             .map(n => new ElementWrapper(n));
         numbers.forEach(n => {
-            n.addTouchHandler(() => {
+            n.setTouchHandler(() => {
                 const number = parseInt(n.getInnerHTML(), 10);
                 if (this.currentNumber < 0) {
                     this.currentNumber = number;
@@ -191,9 +200,9 @@ class Calculator {
             });
         });
         const calcCancel = new ElementWrapper(calcDom.querySelector('.calc-cancel'));
-        calcCancel.addTouchHandler(() => this.reset());
+        calcCancel.setTouchHandler(() => this.reset());
         const calcEnter = new ElementWrapper(calcDom.querySelector('.calc-enter'));
-        calcEnter.addTouchHandler(() => onenter(this.currentNumber));
+        calcEnter.setTouchHandler(() => onenter(this.currentNumber));
         this.onenter = onenter;
     }
 
