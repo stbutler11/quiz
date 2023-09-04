@@ -217,8 +217,17 @@ async function loadParentPage() {
     document.body.appendChild(appDiv);
 }
 
+function resizeApp() {
+    const resize = () => {
+        document.body.style.height = `${window.innerHeight}px`;
+    }
+    addEventListener("resize", resize);
+    resize();
+}
+
 export async function start(nextQuestionFn) {
     await loadParentPage();
+    resizeApp();
     initLetters();
     initCalcualtor();
     initImage();
