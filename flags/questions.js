@@ -307,14 +307,18 @@ const data = {
   "zw": "Zimbabwe"
 };
 
-const questions = Object.entries(data).map(([code, country]) => ({
-    answer: country,
-    category: "Flags",
-    imageUrl: `https://flagcdn.com/${code}.svg`,
-    question: "Name the country",
-    type: "open"
-}));
+const isUsState = code => code.includes("us-");
+
+const questions = Object.entries(data)
+  .filter(([code]) => !isUsState(code))
+  .map(([code, country]) => ({
+      answer: country,
+      category: "Flags",
+      imageUrl: `https://flagcdn.com/${code}.svg`,
+      question: "Name the flag",
+      type: "open"
+  }));
 
 export async function nextQuestion() {
-    return questions[Math.floor(Math.random() * data.length)];
+    return questions[Math.floor(Math.random() * questions.length)];
 }
