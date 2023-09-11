@@ -7,19 +7,19 @@ let calculator;
 let nextQ;
 let currentQuestion;
 
-async function onCorrect() {
+async function onCorrect(correctAnswer) {
     await alertify.alert(`
         <span style="color: green;">Correct</span> </br>
-        ${currentQuestion.answer}
+        ${correctAnswer}
     `);
     incrementCorrect();
 }
 
-async function onIncorrect(wrongAnswer) {
+async function onIncorrect(correctAnswer, incorrectAnswer) {
     await alertify.alert(`
         <span style="color: red;">Incorrect</span> </br>
-        Selected answer: <strong>${wrongAnswer}</strong> </br>
-        Correct answer : <strong>${currentQuestion.answer}</strong>
+        Selected answer: <strong>${incorrectAnswer}</strong> </br>
+        Correct answer : <strong>${correctAnswer}</strong>
     `);
     incrementIncorrect();
 }
@@ -30,14 +30,14 @@ function initLetters() {
     letters.map(l => new ElementWrapper(l)).forEach(l => {
         l.setTouchHandler(async () => {
             const letter = l.getInnerHTML();
-            const rootAnswer = currentQuestion.answer;
+            const rootAnswer = await currentQuestion.answer;
             // Remove "The" from the answer
             const answerWithoutThe = rootAnswer.replace(/\s*[T|t]he\s+(.*)/, "$1");
+            const answerWithTheInBrackets = rootAnswer.replace(/\s*([T|t]he)(\s+)(.*)/, "($1)$2$3");
             if (letter.split("/").find(l => answerWithoutThe.toUpperCase().startsWith(l))) {
-                // TODO const answerWithTheInBrackets = rootAnswer.replace(/\s*([T|t]he)(\s+)(.*)/, "($1)$2$3");
-                await onCorrect();
+                await onCorrect(answerWithTheInBrackets);
             } else {
-                await onIncorrect(letter);
+                await onIncorrect(answerWithTheInBrackets, letter);
             }
             showNextQuestion();
         });
@@ -48,9 +48,9 @@ function initCalcualtor() {
     calculator = new Calculator("calc", async (input) => {
         const answer = currentQuestion.answer;
         if (parseInt(input, 10) === parseInt(answer, 10)) {
-            await onCorrect();
+            await onCorrect(answer);
         } else {
-            await onIncorrect(input);
+            await onIncorrect(answer, input);
         }
         showNextQuestion();
     });
@@ -79,9 +79,9 @@ async function showNextQuestion() {
         showMultiple(choices, async (selectedAnswer) => {
             const answer = currentQuestion.answer;
             if (selectedAnswer === answer) {
-                await onCorrect();
+                await onCorrect(answer);
             } else {
-                await onIncorrect(selectedAnswer);
+                await onIncorrect(answer, selectedAnswer);
             }
             showNextQuestion();
         });
