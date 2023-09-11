@@ -1,10 +1,8 @@
 import "https://labeg.github.io/alertify.js/js/alertify.js";
 const { alertify } = alertifyjs;
 
-let numCorrect = 0;
-let numIncorrect = 0;
 let calculator;
-let nextQ;
+let quizEngine;
 let currentQuestion;
 
 async function onCorrect(correctAnswer) {
@@ -12,7 +10,6 @@ async function onCorrect(correctAnswer) {
         <span style="color: green;">Correct</span> </br>
         ${correctAnswer}
     `);
-    incrementCorrect();
 }
 
 async function onIncorrect(correctAnswer, incorrectAnswer) {
@@ -21,7 +18,17 @@ async function onIncorrect(correctAnswer, incorrectAnswer) {
         Selected answer: <strong>${incorrectAnswer}</strong> </br>
         Correct answer : <strong>${correctAnswer}</strong>
     `);
-    incrementIncorrect();
+}
+
+async function sendGuess(guess) {
+    const { correctAnswer, isCorrect, correctCount, incorrectCount } = await currentQuestion.sendGuess(guess);
+    if (isCorrect) {
+        await onCorrect(correctAnswer);
+    } else {
+        await onIncorrect(correctAnswer, guess);
+    }
+    updateScore( { correctCount, incorrectCount } )
+    showNextQuestion();
 }
 
 
@@ -29,30 +36,14 @@ function initLetters() {
     const letters = [...document.getElementsByClassName("letter")];
     letters.map(l => new ElementWrapper(l)).forEach(l => {
         l.setTouchHandler(async () => {
-            const letter = l.getInnerHTML();
-            const rootAnswer = await currentQuestion.answer;
-            // Remove "The" from the answer
-            const answerWithoutThe = rootAnswer.replace(/\s*[T|t]he\s+(.*)/, "$1");
-            const answerWithTheInBrackets = rootAnswer.replace(/\s*([T|t]he)(\s+)(.*)/, "($1)$2$3");
-            if (letter.split("/").find(l => answerWithoutThe.toUpperCase().startsWith(l))) {
-                await onCorrect(answerWithTheInBrackets);
-            } else {
-                await onIncorrect(answerWithTheInBrackets, letter);
-            }
-            showNextQuestion();
+            await sendGuess(l.getInnerHTML());
         });
     });
 }
 
 function initCalcualtor() {
     calculator = new Calculator("calc", async (input) => {
-        const answer = currentQuestion.answer;
-        if (parseInt(input, 10) === parseInt(answer, 10)) {
-            await onCorrect(answer);
-        } else {
-            await onIncorrect(answer, input);
-        }
-        showNextQuestion();
+        await sendGuess(input);
     });
 }
 
@@ -65,8 +56,8 @@ function initImage() {
 }
 
 async function showNextQuestion() {
-    currentQuestion = await nextQ();
-    const { question, type, answer, incorrectAnswers, imageUrl } = currentQuestion;
+    currentQuestion = await quizEngine.getNextQuestion();
+    const { question, type, choices, imageUrl } = currentQuestion;
     const questionDiv = new ElementWrapper(document.getElementById("question"));
     questionDiv.replaceChildren(question);
     let appClass;
@@ -74,16 +65,8 @@ async function showNextQuestion() {
         calculator.reset();
         appClass = "show-calc";
     } else if (type === "multiple") {
-        const choices = [answer, ...incorrectAnswers];
-        shuffleArray(choices);
         showMultiple(choices, async (selectedAnswer) => {
-            const answer = currentQuestion.answer;
-            if (selectedAnswer === answer) {
-                await onCorrect(answer);
-            } else {
-                await onIncorrect(answer, selectedAnswer);
-            }
-            showNextQuestion();
+            await sendGuess(selectedAnswer)
         });
         appClass = "show-multiple";
     } else {
@@ -114,14 +97,9 @@ function removeAppClass(c) {
     document.getElementById("app").setAttribute("class", currentClass.replace(c, ""));
 }
 
-function incrementCorrect() {
-    numCorrect++;
-    document.getElementById("correct").replaceChildren(`${numCorrect}`);
-}
-
-function incrementIncorrect() {
-    numIncorrect++;
-    document.getElementById("incorrect").replaceChildren(`${numIncorrect}`);
+function updateScore({ correctCount, incorrectCount }) {
+    document.getElementById("correct").replaceChildren(`${correctCount}`);
+    document.getElementById("incorrect").replaceChildren(`${incorrectCount}`);
 }
 
 function shuffleArray(array) {
@@ -129,6 +107,7 @@ function shuffleArray(array) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
     }
+    return array;
 }
 
 
@@ -212,6 +191,55 @@ class Calculator {
     }
 }
 
+class QuizEngine {
+
+    constructor(nextQuestionFn) {
+        this._nextQuestionFn = nextQuestionFn;
+        this._correctCount = 0;
+        this._incorrectCount = 0;
+    }
+
+    async getNextQuestion() {
+        const { question, type, answer, incorrectAnswers, imageUrl } = await this._nextQuestionFn();
+        const engine = this;
+        return {
+            question,
+            type,
+            imageUrl,
+            choices: incorrectAnswers ? shuffleArray ([answer, ...incorrectAnswers]): undefined,
+            async sendGuess(guess) {
+                const response = {
+                    isCorrect: false,
+                    correctAnswer: answer
+                };
+                if (type === "calc") {
+                    response.isCorrect = parseInt(guess, 10) === parseInt(answer, 10);
+                } else if (type === "multiple") {
+                    // Then the guess must match exactly
+                    response.isCorrect = guess === answer;
+                } else {
+                    // Otherwise use the first letter
+                    // Remove "The" from the answer
+                    const answerWithoutThe = answer.replace(/\s*[T|t]he\s+(.*)/, "$1");
+                    const answerWithTheInBrackets = answer.replace(/\s*([T|t]he)(\s+)(.*)/, "($1)$2$3");
+                    response.isCorrect = guess
+                        .split("/")
+                        .find(l => answerWithoutThe.toUpperCase().startsWith(l));
+                    response.correctAnswer = answerWithTheInBrackets;
+                }
+                if (response.isCorrect) {
+                    engine._correctCount++;
+                } else {
+                    engine._incorrectCount++;
+                }
+                response.correctCount = engine._correctCount;
+                response.incorrectCount = engine._incorrectCount;
+                return response;
+            }
+        }
+    }
+}
+
 async function loadParentPage() {
     if (document.getElementById("app")) {
         return; // Already defined
@@ -240,7 +268,7 @@ export async function start(nextQuestionFn) {
     initLetters();
     initCalcualtor();
     initImage();
-    nextQ = nextQuestionFn;
+    quizEngine = new QuizEngine(nextQuestionFn);
     showNextQuestion();
 }
 
