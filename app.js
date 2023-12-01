@@ -200,14 +200,16 @@ class QuizEngine {
     }
 
     async getNextQuestion() {
-        const { question, type, answer, incorrectAnswers, imageUrl } = await this._nextQuestionFn();
+        // answer and sendGuessFn are mutually exclusive
+        const { question, type, answer, incorrectAnswers, imageUrl, sendGuessFn } = await this._nextQuestionFn();
+
         const engine = this;
         return {
             question,
             type,
             imageUrl,
             choices: incorrectAnswers ? shuffleArray ([answer, ...incorrectAnswers]): undefined,
-            async sendGuess(guess) {
+            sendGuess: sendGuessFn ? sendGuessFn : async (guess) => {
                 const response = {
                     isCorrect: false,
                     correctAnswer: answer
