@@ -8,7 +8,7 @@ let currentQuestion;
 async function onCorrect(correctAnswer) {
     await alertify.alert(`
         <span style="color: green;">Correct</span> </br>
-        ${correctAnswer}
+        ${correctAnswer.replaceAll("\n", "</br>")}
     `);
 }
 
@@ -16,7 +16,7 @@ async function onIncorrect(correctAnswer, incorrectAnswer) {
     await alertify.alert(`
         <span style="color: red;">Incorrect</span> </br>
         Selected answer: <strong>${incorrectAnswer}</strong> </br>
-        Correct answer : <strong>${correctAnswer}</strong>
+        Correct answer : <strong>${correctAnswer.replaceAll("\n", "</br>")}</strong>
     `);
 }
 

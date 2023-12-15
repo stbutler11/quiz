@@ -252,8 +252,8 @@ const data = [
 ];
 
 const imageQuestions = data
-  .map(({ title, src}) => ({
-      answer: title,
+  .map(({ description, src, title }) => ({
+      answer: `${title}\n${description}`,
       category: "Cartoons",
       imageUrl: src,
       question: "Who is this cartoon character?",
@@ -261,7 +261,7 @@ const imageQuestions = data
   }));
 
 const descriptionQuestions = data
-  .map(({ title, description }) => ({
+  .map(({ description, title }) => ({
       answer: title,
       category: "Cartoons",
       question: `Name the famous cartoon character: ${description.replaceAll(title, "***")}`,
